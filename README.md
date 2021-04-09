@@ -15,7 +15,7 @@ Encode many files with different passwords into one large file. When decoding th
 6.如果发表文章与我的代码相关，请给予我一个引用位。(PS:我又在想peach)
 
 ##算法介绍
-
+ 
 ###理想状态的函数
 
 $$
