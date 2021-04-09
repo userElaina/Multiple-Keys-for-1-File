@@ -79,3 +79,8 @@ def mian(_psw:str,in_pth:str,out_pth:str=None,_n:int=None,xor8:int=0):
 	starts(_psw,_n)
 
 	open(out_pth,'wb').write(bytes(funcs(open(in_pth,'rb').read(),xor8)))
+	
+
+if _debug:
+	mian('12345678','0test_np.qwq3','01.txt',8,233)
+	mian('7!S6eIo4','0test_np.qwq3','02.txt',8,233)
