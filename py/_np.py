@@ -88,3 +88,7 @@ def mian(pth:str,_files_name:list,_n:int=None,len_psw:int=None,lst_psw:list=None
 			ans=ans[8:]
 		if flg and len(ans)==0:
 			break
+		
+
+if _debug:
+	mian('0test_np',['1.txt','2.txt'],8,8,['12345678','7!S6eIo4'],233)
