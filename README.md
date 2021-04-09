@@ -14,9 +14,9 @@ Encode many files with different passwords into one large file. When decoding th
 
 6.如果发表文章与我的代码相关，请给予我一个引用位。(PS:我又在想peach)
 
-##算法介绍
+## 算法介绍
  
-###理想状态的函数
+### 理想状态的函数
 
 $$
 \rm F(psw_1,\cdots,psw_n,file_1,\cdots,file_n)=bigfile,
@@ -28,13 +28,13 @@ $$
 
 且 $\rm bigfile$ 就算在知道了源码和部分 $\rm psw$ 的情况下，还是只能爆破。
 
-###异或值
+### 异或值
 
 其实没啥用，要是算法没开源的话还有点用。
 
 几乎没有加密效果，仅用作混淆。要加密的话自己先拿个现有常用加密算法跑一跑就好了。
 
-###密码序列要求
+### 密码序列要求
 
 编码过程中，需要用每个 $\rm psw_x$ 生成无限长度下标序列 $\rm l_x,$ 满足
 
@@ -44,11 +44,11 @@ $$
 
 可见这个要求还是很苛刻的，所以我们采用让程序自生成密码的方式。 
 
-###下标序列生成
+### 下标序列生成
 
 密码字符串 $\to$ 整数 $\to\rm n$ 进制数字符串 $\to$ 转无限长度序列(用环状结构实现)
 
-###$\rm bigfile$ 文件结构
+### $\rm bigfile$ 文件结构
 
 记文件 $\rm x$ 的第 $\rm i$ 个bit位为 $\rm x[i],$ 则
 
@@ -68,7 +68,7 @@ $$
 \rm恰好是小文件file_x的第k位.
 $$
 
-###暴力破解所需时间
+### 暴力破解所需时间
 
 已知算法和 $k$ 个密码。
 
@@ -80,25 +80,25 @@ $$
 O((n-k)^m)\simeq O((\frac{n-k}n)^m95^l).
 $$
 
-###其它可能的破解方式
+### 其它可能的破解方式
 
 对方知道里面存的其中一个文件的一段bit位和异或值，但不知道文件数量、任何密码或密码长度，于是可以暴力对比出此文件对应的密码。所需时间的数学期望仅为 $m^2n\log n.$
 
-###安全性证明
+### 安全性证明
 
 不会证。
 
-##接口介绍
+## 接口介绍
 
-###_psw.key_maker
+### _psw.key_maker
 
-####函数定义
+#### 函数定义
 
 ```py
 def key_maker(pth:str,n:int=None,len_psw:int=None,lst_psw:list=None,xor8:int=0)->list:
 ```
 
-####变量介绍
+#### 变量介绍
 
 |名称		|类型|		解释|
 |-			|-|			-|
@@ -109,7 +109,7 @@ def key_maker(pth:str,n:int=None,len_psw:int=None,lst_psw:list=None,xor8:int=0)-
 |`xor8`		|`int`| 	异或值，生成密码时用不到|
 |返回值		|`list`|	下标序列
 
-####功能介绍
+#### 功能介绍
 
 给出需要的密码长度和个数，生成合法的密码序列。
 
@@ -117,15 +117,15 @@ def key_maker(pth:str,n:int=None,len_psw:int=None,lst_psw:list=None,xor8:int=0)-
 
 需要生成真假密码混合序列时，将真密码作为许愿密码即可。
 
-###np.mian
+### np.mian
 
-####函数定义
+#### 函数定义
 
 ```py
 def mian(pth:str,_files_name:list,_n:int=None,len_psw:int=None,lst_psw:list=None,xor8:int=0):
 ```
 
-####变量介绍
+#### 变量介绍
 
 |名称			|类型|		解释|
 |-				|-|			-|
@@ -137,21 +137,21 @@ def mian(pth:str,_files_name:list,_n:int=None,len_psw:int=None,lst_psw:list=None
 |`xor8`			|`int`| 	异或值|
 |返回值			|`None`|	无
 
-####功能介绍
+#### 功能介绍
 
 调用了 `_psw.key_maker` 来生成密码。
 
 `_n` 允许且建议大于实际文件数量，多余位将以随机bit位填充。
 
-###_p.mian
+### _p.mian
 
-####函数定义
+#### 函数定义
 
 ```py
 def mian(_psw:str,in_pth:str,out_pth:str=None,_n:int=None,xor8:int=0):
 ```
 
-####变量介绍
+#### 变量介绍
 
 |名称		|类型|		解释|
 |-			|-|			-|
@@ -162,7 +162,7 @@ def mian(_psw:str,in_pth:str,out_pth:str=None,_n:int=None,xor8:int=0):
 |`xor8`		|`int`| 	异或值|
 |返回值		|`None`|	无
 
-####功能介绍
+#### 功能介绍
 
 一个密码只能解压对应的一个文件。
 
