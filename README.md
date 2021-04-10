@@ -5,7 +5,7 @@
 
 同时你可以生成多个只包括部分真密码的密码序列，使得就算有人拿枪顶着你的脑袋让你解码，你也可以隐藏想要隐藏的文件。
 
- 
+ 　
 
 Encode many files with different passwords into one large file. 
 
