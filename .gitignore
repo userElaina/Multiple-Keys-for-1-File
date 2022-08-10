@@ -1,0 +1,11 @@
+.vscode/
+
+*.key
+
+# executable
+*.exe
+*.out
+
+archive/
+*/temp/
+tempCodeRunnerFile.*
