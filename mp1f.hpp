@@ -17,55 +17,35 @@ inline void throws(const char *s) {
 }
 
 const int MAX_N = 255;
+int flg_srand_time = 0;
 
 class Keys {
 private:
-    int n, num = 0, loop_size = 0;
+    int n, num = 0;
+    int blocks = 0;
     int n_0, n_1;
     B *map, *inverse_map;
 
     inline int convert(B *s, int size) {
-        const int quotient = size / n_1, remainder = size % n_1;
-        const int ls2 = (quotient + (remainder ? 1 : 0)) * n_0;
-
-        // printf("[%d/%d %d/%d=%d...%d]\n", ls2, n_0, size, n_1, quotient, remainder);
-
-        if (!num && loop_size <= 0) {
-            set_loop_size(ls2);
+        if (!num && blocks <= 0) {
+            set_key_size(size);
         } else {
-            if (ls2 < loop_size) {
+            if (size + n_1 <= get_key_size()) {
                 return -1;
             }
         }
-        int st = 0, mt = 0;
-        for (int i = 0; i < quotient; i++) {
+        int st = 0;
+        for (int i = 0; i < get_loop_size() * n; i += n_0 * n) {
             ULL reg = 0;
             for (int j = 0; j < n_1; j++) {
-                reg = reg << 8 | (ULL)s[st++];
-            }
-            for (int j = mt + (n_0 - 1) * n; j >= mt; j -= n) {
-                const int x = reg % n;
-                if (inverse_map[x] < num) {
-                    return 1;
-                }
-                inverse_map[j + x] = num;
-                map[j + num] = x;
-                reg /= n;
-            }
-            mt += n_0 * n;
-        }
-        if (remainder) {
-            ULL reg = 0;
-            int j = 0;
-            for (; j < remainder; j++) {
-                reg = reg << 8 | (ULL)s[st++];
-            }
-            for (; j < n_1; j++) {
                 reg <<= 8;
+                if (st < size) {
+                    reg |= s[st++];
+                }
             }
-            for (int j = mt + (n_0 - 1) * n; j >= mt; j -= n) {
+            for (int j = i + (n_0 - 1) * n; j >= i; j -= n) {
                 const int x = reg % n;
-                if (inverse_map[x] < num) {
+                if (inverse_map[j + x] < num) {
                     return 1;
                 }
                 inverse_map[j + x] = num;
@@ -87,16 +67,21 @@ public:
         if (loop_size > 0) {
             set_loop_size(loop_size);
         }
+        if (!flg_srand_time) {
+            srand(time(NULL));
+            flg_srand_time = 1;
+        }
     }
-    inline int set_loop_size(int loop_size) {
+
+    inline int set_blocks(int blocks) {
         if (num) {
             return -1;
         }
-        if (loop_size <= 0) {
-            return loop_size;
+        if (blocks <= 0) {
+            return blocks;
         }
-        const int map_size = loop_size * n;
-        if (this->loop_size) {
+        const int map_size = blocks * n_0 * n;
+        if (this->blocks) {
             realloc(map, map_size);
             realloc(inverse_map, map_size);
         } else {
@@ -104,7 +89,13 @@ public:
             inverse_map = (B *)malloc(map_size);
         }
         memset(inverse_map, -1, map_size);
-        return this->loop_size = loop_size;
+        return this->blocks = blocks;
+    }
+    inline int set_loop_size(int loop_size) {
+        return set_blocks((loop_size - 1) / n_0 + 1);
+    }
+    inline int set_key_size(int key_size) {
+        return set_blocks((key_size - 1) / n_1 + 1);
     }
 
     inline int add(B *k) {
@@ -137,13 +128,12 @@ public:
     }
 
     inline int random() {
-        if (loop_size <= 0) {
+        if (blocks <= 0) {
             return -1;
         }
-        srand(time(NULL));
         const int range = n - num;
 
-        for (int j = 0; j < loop_size * n; j += n) {
+        for (int j = 0; j < get_loop_size() * n; j += n) {
             int x = 0, y = range * rand() / (RAND_MAX + 1);
             for (; x < n; x++) {
                 if (inverse_map[j + x] >= num) {
@@ -173,13 +163,6 @@ public:
         return 0;
     }
 
-    inline void pt(int x) const {
-        for (int i = 0; i < loop_size; i++) {
-            printf("%d", map[i * n + x]);
-        }
-        printf("\n");
-    }
-
     inline void restart() {
         ap = 0;
     }
@@ -191,7 +174,54 @@ public:
     //     return map[ap++];
     // }
 
-    inline int get_length() const {
-        return loop_size;
+    inline void pt(int x) const {
+        for (int i = 0; i < get_loop_size() * n; i += n) {
+            printf("%x", map[i + x]);
+        }
+        printf("\n");
+    }
+
+    inline B *get_key(int x) const {
+        B *ans = (B *)malloc(get_key_size());
+        int st = 0;
+        for (int i = 0; i < get_loop_size() * n; i += n_0 * n) {
+            ULL reg = 0;
+            for (int j = i; j < i + n_0 * n; j += n) {
+                reg *= n;
+                reg += map[j + x];
+            }
+            for (int j = n_1 - 1 + st; j >= st; j--) {
+                ans[j] = reg & (ULL)255;
+                reg >>= 8;
+            }
+            st += n_1;
+        }
+        return ans;
+    }
+
+    inline int save_key(int x, const char *fname) const {
+        FILE *fp = fopen(fname, "wb");
+        fwrite(get_key(x), 1, get_key_size(), fp);
+        fclose(fp);
+        return 0;
+    }
+    inline int save_key(int x, std::string fname) const {
+        return save_key(x, fname.c_str());
+    }
+
+    inline int get_n() const {
+        return n;
+    }
+    inline int get_num() const {
+        return num;
+    }
+    inline int get_blocks() const {
+        return blocks;
+    }
+    inline int get_loop_size() const {
+        return blocks * n_0;
+    }
+    inline int get_key_size() const {
+        return blocks * n_1;
     }
 };
