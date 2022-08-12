@@ -1,6 +1,7 @@
 .vscode/
 
 *.key
+*.bin
 
 # executable
 *.exe
