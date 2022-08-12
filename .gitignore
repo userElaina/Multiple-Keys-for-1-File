@@ -7,6 +7,6 @@
 *.exe
 *.out
 
-archive/
+# archive/
 */temp/
 tempCodeRunnerFile.*
