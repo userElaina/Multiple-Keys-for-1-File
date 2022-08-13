@@ -2,11 +2,12 @@
 
 *.key
 *.bin
+keys/
 
 # executable
 *.exe
 *.out
 
-# archive/
+archive/
 */temp/
 tempCodeRunnerFile.*

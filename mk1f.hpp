@@ -4,13 +4,14 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
-#include <vector>
 
 #include "basen.h"
 
 #define LL long long
 #define ULL unsigned long long
 #define B unsigned char
+
+namespace Mk1f {
 
 const int MAX_N = 255;
 int flg_srand_time = 0;
@@ -43,13 +44,15 @@ public:
     Reader(const char *pth, int flg_head);
     inline int read_bit();
     inline ULL read_bits(int x);
-    inline void release();
+    inline int read_bit_of_n(int x, int n);
+    inline void fre();
+    ~Reader();
 };
 
-Reader::Reader(const char *pth, int flg_head = 1) {
+Reader::Reader(const char *pth, int flg_head = 0) {
     buffer = (B *)malloc(BUFFER_SIZE);
     if (!flg_srand_time) {
-        srand(time(NULL));
+        srand(time(nullptr));
         flg_srand_time = 1;
     }
     size = size_of_file(pth);
@@ -103,7 +106,7 @@ inline int Reader::read_bit() {
 }
 
 inline ULL Reader::read_bits(int x) {
-    if (x > 64) {
+    if (x < 0 || x > 64) {
         throws("Reader.read_bits: x out of range");
     }
     ULL ans = 0;
@@ -113,9 +116,32 @@ inline ULL Reader::read_bits(int x) {
     return ans;
 }
 
-inline void Reader::release() {
-    fclose(fp);
-    t = t1 = t2 = 0;
+inline int Reader::read_bit_of_n(int x, int n) {
+    int ans;
+    int k = 0;
+    for (; k <= x; k++) {
+        ans = read_bit();
+    }
+    for (; k < n; k++) {
+        read_bit();
+    }
+    return ans;
+}
+
+inline void Reader::fre() {
+    if (fp) {
+        fclose(fp);
+        fp = nullptr;
+    }
+    if (buffer) {
+        free(buffer);
+        buffer = nullptr;
+    }
+    size = t = t1 = t2 = 0;
+}
+
+Reader::~Reader() {
+    fre();
 }
 
 class Writer {
@@ -128,8 +154,11 @@ private:
 public:
     Writer(const char *pth);
     inline void write_bit(int b);
+    inline void write_bits(ULL b, int x);
     inline void flush();
     inline void release();
+    inline void fre();
+    ~Writer();
 };
 
 Writer::Writer(const char *pth) {
@@ -156,23 +185,46 @@ inline void Writer::write_bit(int b) {
     }
 }
 
-inline void Writer::flush() {
-    fwrite(buffer, 1, t1 + (t2 ? 1 : 0), fp);
+inline void Writer::write_bits(ULL b, int x) {
+    if (x < 0 || x > 64) {
+        throws("Writer.write_bits: x out of range");
+    }
+    x--;
+    for (; x >= 0; x--) {
+        write_bit((b & (1 << x)) ? 1 : 0);
+    }
 }
 
-inline void Writer::release() {
+inline void Writer::flush() {
+    const int a = t1 + (t2 ? 1 : 0);
+    if (a) {
+        fwrite(buffer, 1, a, fp);
+    }
+    t1 = t2 = 0;
+}
+
+inline void Writer::fre() {
     flush();
-    fclose(fp);
-    t = t1 = t2 = 0;
+    if (fp) {
+        fclose(fp);
+        fp = nullptr;
+    }
+    if (buffer) {
+        free(buffer);
+        buffer = nullptr;
+    }
+    t = 0;
+}
+
+Writer::~Writer() {
+    fre();
 }
 
 class Keys {
 private:
-    int n, num = 0;
-    int blocks = 0;
+    int n, num = 0, blocks = 0;
     int n_0, n_1;
     B *map, *inverse_map;
-    int ap = 0;
     inline int convert(B *s, int size);
 
 public:
@@ -182,22 +234,27 @@ public:
     inline int read(const char *pth);
     inline int random();
     inline int release();
-    inline void restart();
 
     inline int set_blocks(int blocks);
     inline int set_loop_size(int loop_size);
     inline int set_key_size(int key_size);
 
-    inline B get_map(int x);
-    inline B *get_inverse_map();
+    // inline B get_map(int x);
     inline B *get_key(int x) const;
     inline int save_key(int x, const char *pth) const;
+    inline int save_keys(const char *pth) const;
     inline void pt(int x) const;
     inline int get_n() const;
     inline int get_num() const;
     inline int get_blocks() const;
     inline int get_loop_size() const;
     inline int get_key_size() const;
+
+    inline int encrypt(char **fs, const char *big) const;
+    inline int decrypt(int x, const char *big, const char *fx) const;
+
+    inline void fre();
+    ~Keys();
 };
 
 inline int Keys::convert(B *s, int size) {
@@ -230,6 +287,7 @@ inline int Keys::convert(B *s, int size) {
     num++;
     return 0;
 }
+
 Keys::Keys(int n, int loop_size = 0) {
     this->n = n;
     n_0 = basen[n][0];
@@ -238,7 +296,7 @@ Keys::Keys(int n, int loop_size = 0) {
         set_loop_size(loop_size);
     }
     if (!flg_srand_time) {
-        srand(time(NULL));
+        srand(time(nullptr));
         flg_srand_time = 1;
     }
 }
@@ -297,10 +355,6 @@ inline int Keys::release() {
     return 0;
 }
 
-inline void Keys::restart() {
-    ap = 0;
-}
-
 inline int Keys::set_blocks(int blocks) {
     if (num) {
         return -1;
@@ -324,25 +378,6 @@ inline int Keys::set_loop_size(int loop_size) {
 }
 inline int Keys::set_key_size(int key_size) {
     return set_blocks((key_size - 1) / n_1 + 1);
-}
-
-inline B Keys::get_map(int x = 0) {
-    B ans = *(map + ap * n + x);
-    ap++;
-    if (ap >= get_loop_size()) {
-        ap = 0;
-    }
-    return ans;
-}
-
-inline B *Keys::get_inverse_map() {
-    B *ans = (B *)malloc(n);
-    std::memcpy(ans, inverse_map + ap * n, n);
-    ap++;
-    if (ap >= get_loop_size()) {
-        ap = 0;
-    }
-    return ans;
 }
 
 inline void Keys::pt(int x) const {
@@ -372,9 +407,22 @@ inline B *Keys::get_key(int x) const {
 
 inline int Keys::save_key(int x, const char *pth) const {
     FILE *fp = fopen(pth, "wb");
+    if (!fp) {
+        return -1;
+    }
     fwrite(get_key(x), 1, get_key_size(), fp);
     fclose(fp);
     return 0;
+}
+
+inline int Keys::save_keys(const char *pth = "keys/%d.key") const {
+    int ans = 0;
+    for (int i = 0; i < n; i++) {
+        char s[512];
+        sprintf(s, pth, i);
+        ans += save_key(i, s);
+    }
+    return ans;
 }
 
 inline int Keys::get_n() const {
@@ -392,3 +440,157 @@ inline int Keys::get_loop_size() const {
 inline int Keys::get_key_size() const {
     return blocks * n_1;
 }
+
+inline void Keys::fre() {
+    int n, num = blocks = n_0 = n_1 = 0;
+    if (map) {
+        free(map);
+        map = nullptr;
+    }
+    if (inverse_map) {
+        free(inverse_map);
+        inverse_map = nullptr;
+    }
+}
+
+Keys::~Keys() {
+    fre();
+}
+
+inline int Keys::encrypt(char **fs, const char *big = "big.bin") const {
+    if (num ^ n) {
+        return -1;
+    }
+    Reader **rp = (Reader **)malloc(sizeof(Reader *) * n);
+    for (int i = 0; i < n; i++) {
+        rp[i] = new Reader(fs[i], 1);
+    }
+    Writer *wp = new Writer(big);
+    wp->write_bits(n, 32);
+
+    const int max_ap = get_loop_size() * n;
+    int ap = 0;
+    int flg = 1;
+    while (flg) {
+        for (int j = 0; j < 8; j++) {
+            for (int i = 0; i < n; i++) {
+                int x = inverse_map[ap++];
+                int y = rp[x]->read_bit();
+                wp->write_bit(y);
+            }
+            if (ap >= max_ap) {
+                ap = 0;
+            }
+        }
+        flg = 0;
+        for (int i = 0; i < n; i++) {
+            if (!rp[i]->flg_rand) {
+                flg = 1;
+                break;
+            }
+        }
+    }
+
+    wp->fre();
+    delete wp;
+    for (int i = 0; i < n; i++) {
+        rp[i]->fre();
+        free(rp[i]);
+    }
+    delete rp;
+    return 0;
+}
+
+// inline B Keys::get_map(int x = -1) {
+//     static int ap;
+//     if (x > 0) {
+//         ap = x;
+//     }
+//     B ans = *(map + ap);
+//     ap += n;
+//     if (ap >= get_loop_size() * n) {
+//         ap = 0;
+//     }
+//     return ans;
+// }
+
+inline int Keys::decrypt(int x, const char *big, const char *fx) const {
+    if (num <= x) {
+        return -1;
+    }
+    Reader *rp = new Reader(big, 0);
+    Writer *wp = new Writer(fx);
+
+    const int _n = rp->read_bits(32);
+    if (_n ^ n) {
+        return _n;
+    }
+
+    const int max_ap = get_loop_size() * n;
+    int ap = x;
+    ULL a = 0;
+    for (int i = 0; i < 3; i++) {
+        ULL b = 0;
+        for (int j = 0; j < 64; j++) {
+            b = b << 1 | rp->read_bit_of_n(*(map + ap), n);
+            ap += n;
+            if (ap >= max_ap) {
+                ap = x;
+            }
+        }
+        a ^= b;
+    }
+
+    // printf("%lld\n", a);
+
+    for (int i = 0; i < a << 3; i++) {
+        wp->write_bit(rp->read_bit_of_n(*(map + ap), n));
+        ap += n;
+        if (ap >= max_ap) {
+            ap = x;
+        }
+    }
+
+    wp->fre();
+    delete wp;
+    rp->fre();
+    delete rp;
+    return 0;
+}
+
+inline int encrypt(int n, int ks, char **fs, const char *big = "big.bin") {
+    int ans = 0;
+    Keys *p = new Keys(n);
+    p->set_key_size(ks);
+    p->release();
+
+    ans = p->save_keys();
+    if (ans) {
+        return ans;
+    }
+
+    ans = p->encrypt(fs, big);
+    p->fre();
+    delete p;
+    return ans;
+}
+
+inline int decrypt(const char *fk, const char *big, const char *fx) {
+    int ans = 0;
+    Reader *rp = new Reader(big, 0);
+    Keys *p = new Keys(rp->read_bits(32));
+    rp->fre();
+    delete rp;
+
+    ans = p->read(fk);
+    if (ans) {
+        return ans;
+    }
+
+    ans = p->decrypt(0, big, fx);
+    p->fre();
+    delete p;
+    return ans;
+}
+
+};  // namespace Mk1f
