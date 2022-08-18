@@ -229,6 +229,9 @@ private:
 
 public:
     Keys(int n, int loop_size);
+
+    inline Keys *clone(int x);
+
     inline int add(B *k);
     inline int add(const char *k);
     inline int read(const char *pth);
@@ -299,6 +302,17 @@ Keys::Keys(int n, int loop_size = 0) {
         srand(time(nullptr));
         flg_srand_time = 1;
     }
+}
+
+inline Keys *Keys::clone(int x) {
+    if (!num || x > num) {
+        return nullptr;
+    }
+    Keys *ans = new Keys(n, get_loop_size());
+    for (int i = 0; i < x; i++) {
+        ans->add(get_key(i));
+    }
+    return ans;
 }
 
 inline int Keys::add(B *k) {
@@ -459,8 +473,10 @@ Keys::~Keys() {
 
 inline int Keys::encrypt(char **fs, const char *big = "big.bin") const {
     if (num ^ n) {
+        // release();
         return -1;
     }
+
     Reader **rp = (Reader **)malloc(sizeof(Reader *) * n);
     for (int i = 0; i < n; i++) {
         rp[i] = new Reader(fs[i], 1);

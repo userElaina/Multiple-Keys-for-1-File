@@ -16,7 +16,7 @@ int main() {
         "archive/8.7z",
         "archive/9.7z"};
 
-    int flg_enc = 0;
+    int flg_enc = 1;
     if (flg_enc) {
         Keys* p = new Keys(n);
         p->read("archive/rd.key");
@@ -24,12 +24,7 @@ int main() {
         printf("save keys: %d\n", p->save_keys());
         printf("Keys.encrypt: %d\n", p->encrypt(fs, "archive/kbig.bin"));
 
-        Keys* p2 = new Keys(n);
-        for (int i = 0; i < n; i++) {
-            char s[512];
-            sprintf(s, "keys/%d.key", i);
-            printf("read %d.key: %d \n", i, p2->read(s));
-        }
+        Keys* p2 = p->clone(6);
         printf("Keys.decrypt %d: %d\n", 5, p2->decrypt(5, "archive/kbig.bin", "archive/05.7z"));
     } else {
         printf("encrypt: %d\n", encrypt(n, 64, fs, "archive/big.bin"));
